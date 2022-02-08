@@ -1,47 +1,51 @@
 from flask import Flask, request, abort
-import os
 
 from linebot import (
-    LineBotApi,WebhookHandler
+    LineBotApi, WebhookHandler
 )
 from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent,TextMessage,TextSendMessage,
+    MessageEvent, TextMessage, TextSendMessage,
 )
+import os
 
 app = Flask(__name__)
 
-LINE_CHANNEL_ACCESS_TOKEN = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
-LINE_CHANNEL_SECRERT = os.environ["LINE_CHANNEL_SECRERT"]
+#環境変数取得
+YOUR_CHANNEL_ACCESS_TOKEN = os.environ["YOUR_CHANNEL_ACCESS_TOKEN"]
+YOUR_CHANNEL_SECRET = os.environ["YOUR_CHANNEL_SECRET"]
 
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(LINE_CHANNEL_SECRERT)
+line_bot_api = LineBotApi(YOUR_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(YOUR_CHANNEL_SECRET)
 
-@app.route("/callback",methods=['POST'])
+@app.route("/callback", methods=['POST'])
 def callback():
+    # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
+
+    # get request body as text
     body = request.get_data(as_text=True)
-    app.logger.info("Request body: "+body)
+    app.logger.info("Request body: " + body)
+
+    # handle webhook body
     try:
-        handler.handle(body,signature)
+        handler.handle(body, signature)
     except InvalidSignatureError:
-        print("Invalid signature.Please check your channel access token/channel
-secret.")
         abort(400)
+
     return 'OK'
 
-@handler.add(MessageEvent,message=TextMessage)
-def handle_message(event):
-    if event.reply_token == "00000000000000000000000000000000":
-       return
 
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=event.message.text)
-    )
+        TextSendMessage(text=event.message.text))
+
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT",5000))
-    app.run(host="0.0.0.0",port=port)
+#    app.run()
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
